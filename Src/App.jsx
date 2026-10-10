@@ -14,7 +14,7 @@ export default function App() {
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('carrito') || '[]');
     setCarrito(saved);
-    let copia = [...dataJson.piezas];
+    let copia = [...(dataJson.piezas || [])];
     saved.forEach(item=>{
       const p = copia.find(x=>x.id===item.id);
       if(p) p.stock = Math.max(0, p.stock - 1);

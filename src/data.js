@@ -120,3 +120,6 @@ export const piezasData = [
     ]
   }
 ];
+
+export const products = piezasData;
+export default piezasData;

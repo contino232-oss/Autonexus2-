@@ -1,6 +1,9 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { useCart } from './context/CartContext.jsx'
-import products from './data.js'
+import * as dataModule from './data.js'
+
+// Esto funciona si exporta como { products } o como default
+const products = dataModule.products || dataModule.default || []
 
 function Home() {
   const { addToCart, cartCount } = useCart()

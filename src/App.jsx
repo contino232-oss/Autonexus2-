@@ -1,15 +1,44 @@
 import { HashRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
 import { useCart } from './context/CartContext.jsx'
 import { piezasData } from './data.js'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function Navbar() {
   const { cartCount } = useCart()
+  const [clima, setClima] = useState('Cargando clima...')
+
+  useEffect(() => {
+    const fetchClima = async (lat, lon) => {
+      try {
+        const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=es`)
+        const geoData = await geoRes.json()
+        const ciudad = geoData.city || geoData.locality || 'Wilde'
+
+        const climaRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`)
+        const climaData = await climaRes.json()
+        const temp = Math.round(climaData.current.temperature_2m)
+
+        setClima(`${ciudad} | ${temp}°C`)
+      } catch {
+        setClima('Wilde | 22°C')
+      }
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => fetchClima(pos.coords.latitude, pos.coords.longitude),
+        () => fetchClima(-34.7033, -58.3221)
+      )
+    } else {
+      fetchClima(-34.7033, -58.3221)
+    }
+  }, [])
+
   return (
     <nav className="navbar">
       <Link to="/" className="logo">Autonexus2</Link>
-      <div className="weather-box">Wilde, BA | 22°C ☀️</div>
+      <div className="weather-box">{clima} ☀️</div>
       <ul>
         <li><Link to="/">Productos</Link></li>
         <li><Link to="/contacto">Contacto</Link></li>
@@ -30,7 +59,6 @@ function Footer() {
           <div className="medios-pago" style={{ marginTop: '12px' }}>
             <img src="https://logotipoz.com/wp-content/uploads/2021/10/logo-visa.png" alt="visa" />
             <img src="https://logotipoz.com/wp-content/uploads/2021/10/logo-mastercard.png" alt="master" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="mp" style={{ height: '22px' }} />
           </div>
         </div>
         <div>
@@ -57,8 +85,8 @@ function Home() {
   const [filtro, setFiltro] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
 
-  const categorias = ['todos', ...new Set(piezasData.map(p => p.categoria))]
-  
+  const categorias = ['todos',...new Set(piezasData.map(p => p.categoria))]
+
   const filtrados = piezasData.filter(p => {
     const matchCat = filtro === 'todos' || p.categoria === filtro
     const matchBusq = p.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -71,7 +99,7 @@ function Home() {
         <input className="input-busqueda" placeholder="Buscar repuesto... ej: Bomba de Agua" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         <div className="categorias">
           {categorias.map(cat => (
-            <button key={cat} onClick={() => setFiltro(cat)} className={filtro === cat ? 'active' : ''}>{cat}</button>
+            <button key={cat} onClick={() => setFiltro(cat)} className={filtro === cat? 'active' : ''}>{cat}</button>
           ))}
         </div>
       </div>
@@ -97,7 +125,19 @@ function Home() {
 function Carrito() {
   const { cart, removeFromCart, cartTotal, clearCart } = useCart()
   const navigate = useNavigate()
-  if (cart.length === 0) return <><main style={{ textAlign: 'center' }}><h2>Carrito vacío</h2><br/><Link to="/" style={{ color: '#c62828', fontWeight: 'bold' }}>Volver a productos</Link></main><Footer /></>
+
+  if (cart.length === 0) {
+    return (
+      <>
+        <main style={{ textAlign: 'center' }}>
+          <h2>Carrito vacío</h2>
+          <br/>
+          <Link to="/" style={{ color: '#c62828', fontWeight: 'bold' }}>Volver a productos</Link>
+        </main>
+        <Footer />
+      </>
+    )
+  }
 
   return (
     <>
@@ -114,8 +154,8 @@ function Carrito() {
             </div>
           ))}
           <h3 style={{ marginTop: '15px' }}>Total: ${cartTotal.toLocaleString('es-AR')}</h3>
-          <button className="btn-pagar" onClick={() => { clearCart(); alert('¡Compra realizada!'); navigate('/') }}>PAGAR CON MERCADO PAGO</button>
-          <button className="btn-seguir" onClick={() => navigate('/')}>Seguir comprando</button>
+          <button className="btn-pagar" style={{ width: '100%', padding: '12px', background: '#009ee3', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', marginTop: '10px' }} onClick={() => { clearCart(); alert('¡Compra realizada!'); navigate('/') }}>PAGAR CON MERCADO PAGO</button>
+          <button className="btn-seguir" style={{ width: '100%', padding: '12px', background: '#666', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', marginTop: '10px' }} onClick={() => navigate('/')}>Seguir comprando</button>
         </div>
       </main>
       <Footer />
@@ -132,7 +172,6 @@ function Login() {
           <input placeholder="Email" />
           <input type="password" placeholder="Contraseña" />
           <button>Ingresar</button>
-          <p style={{ marginTop: '10px', fontSize: '13px', textAlign: 'center' }}>¿No tenés cuenta? Registrate</p>
         </div>
       </main>
       <Footer />
@@ -146,7 +185,6 @@ function Contacto() {
       <main>
         <div className="auth-container">
           <h2>Contacto</h2>
-          <p style={{ marginBottom: '15px', fontSize: '14px' }}>Estamos en Wilde, Avellaneda. Respondemos por WhatsApp, Instagram y Facebook.</p>
           <input placeholder="Tu nombre" />
           <input placeholder="Tu email" />
           <textarea placeholder="Tu mensaje..." rows="4"></textarea>
